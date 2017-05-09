@@ -48,129 +48,129 @@ TEST_CASE("Default constructor") {
     CHECK_THROWS(get<short>(b));
 }
 
-//TEST_CASE("Value constructor") {
-//    variant<int, double> a(5.0);
-//    CHECK(get<double>(a) == 5.0);
-//    CHECK_THROWS(get<int>(a));
+TEST_CASE("Value constructor") {
+    variant<int, double> a(5.0);
+    CHECK(get<double>(a) == 5.0);
+    CHECK_THROWS(get<int>(a));
 
-//    variant<int, double> b(5);
-//    CHECK(get<int>(b) == 5);
-//    CHECK_THROWS(get<double>(b));
+    variant<int, double> b(5);
+    CHECK(get<int>(b) == 5);
+    CHECK_THROWS(get<double>(b));
 
-//    variant<int, std::string> c("Hello");
-//    CHECK(get<std::string>(c) == "Hello");
-//    CHECK_THROWS(get<int>(c));
-//}
+    variant<int, std::string> c("Hello");
+    CHECK(get<std::string>(c) == "Hello");
+    CHECK_THROWS(get<int>(c));
+}
 
-//TEST_CASE("Move semantics") {
-//    int destructor_count = 0;
-//    int copy_cnt = 0;
-//    {
-//        variant<helper> a(std::move(variant<helper>(helper(5, destructor_count, copy_cnt))));
-//        variant<helper> b;
-//        b = std::move(a);
-//        CHECK(get<helper>(b).tag == 5);
-//        CHECK_THROWS(get<helper>(a));
-//    }
-//    CHECK(copy_cnt == 0);
-//}
+TEST_CASE("Move semantics") {
+    int destructor_count = 0;
+    int copy_cnt = 0;
+    {
+        variant<helper> a(std::move(variant<helper>(helper(5, destructor_count, copy_cnt))));
+        variant<helper> b;
+        b = std::move(a);
+        CHECK(get<helper>(b).tag == 5);
+        CHECK_THROWS(get<helper>(a));
+    }
+    CHECK(copy_cnt == 0);
+}
 
-//TEST_CASE("get") {
-//    const variant<int, helper> a(3);
-//    CHECK(get<int>(a) == 3);
+TEST_CASE("get") {
+    const variant<int, helper> a(3);
+    CHECK(get<int>(a) == 3);
 
-//    int* int_ptr = new int(5);
-//    const variant<int*> b(int_ptr);
-//    CHECK(*get<int*>(b) == 5);
+    int* int_ptr = new int(5);
+    const variant<int*> b(int_ptr);
+    CHECK(*get<int*>(b) == 5);
 
-//    variant<int, helper> ax(3);
-//    CHECK(get<int>(ax) == 3);
+    variant<int, helper> ax(3);
+    CHECK(get<int>(ax) == 3);
 
-//    variant<int*> bx(int_ptr);
-//    CHECK(*get<int*>(bx) == 5);
+    variant<int*> bx(int_ptr);
+    CHECK(*get<int*>(bx) == 5);
 
-//    delete int_ptr;
-//}
+    delete int_ptr;
+}
 
-//TEST_CASE("get hirarchy") {
-//    variant<A, B> x;
-//    x = B();
-//    CHECK_THROWS(get<A>(x));
-//    CHECK_NOTHROW(get<B>(x));
-//}
+TEST_CASE("get hirarchy") {
+    variant<A, B> x;
+    x = B();
+    CHECK_THROWS(get<A>(x));
+    CHECK_NOTHROW(get<B>(x));
+}
 
 
-//TEST_CASE("get by index") {
-//    variant<int, std::string> a(3);
-//    CHECK(get<0>(a) == 3);
-//    CHECK(*get<0>(&a) == 3);
+TEST_CASE("get by index") {
+    variant<int, std::string> a(3);
+    CHECK(get<0>(a) == 3);
+    CHECK(*get<0>(&a) == 3);
 
-//    const auto aint = a;
-//    a = "Hello";
-//    CHECK(get<1>(a) == "Hello");
-//    const auto astring = a;
-//    CHECK(get<0>(aint) == 3);
-//    CHECK(get<1>(astring) == "Hello");
-//}
+    const auto aint = a;
+    a = "Hello";
+    CHECK(get<1>(a) == "Hello");
+    const auto astring = a;
+    CHECK(get<0>(aint) == 3);
+    CHECK(get<1>(astring) == "Hello");
+}
 
-//TEST_CASE("Check of alignment") {
-//    struct alignas(128) X {};
-//    CHECK(alignof(variant<char, X>) == 128);
-//}
+TEST_CASE("Check of alignment") {
+    struct alignas(128) X {};
+    CHECK(alignof(variant<char, X>) == 128);
+}
 
-//TEST_CASE("test swap") {
+TEST_CASE("test swap") {
 //    using std::swap;
-//    variant<int, std::string> a(3);
-//    variant<int, std::string> b("Hello");
-//    CHECK(get<std::string>(b) == "Hello");
-//    CHECK(get<int>(a) == 3);
-//    swap(a, b);
-//    CHECK(get<std::string>(a) == "Hello");
-//    CHECK(get<int>(b) == 3);
-//}
+    variant<int, std::string> a(3);
+    variant<int, std::string> b("Hello");
+    CHECK(get<std::string>(b) == "Hello");
+    CHECK(get<int>(a) == 3);
+    swap(a, b);
+    CHECK(get<std::string>(a) == "Hello");
+    CHECK(get<int>(b) == 3);
+}
 
-//TEST_CASE("Check destructors") {
-//    int destructor_count = 0;
-//    int copy_cnt = 0;
-//    helper *helper_ptr = new helper(5, destructor_count, copy_cnt);
-//    {
-//        variant<helper, int, double> a(helper(5, destructor_count, copy_cnt));
-//        variant<int, helper*, double> b(helper_ptr);
-//    }
-//    CHECK(destructor_count == 2);
-//    delete helper_ptr;
-//}
+TEST_CASE("Check destructors") {
+    int destructor_count = 0;
+    int copy_cnt = 0;
+    helper *helper_ptr = new helper(5, destructor_count, copy_cnt);
+    {
+        variant<helper, int, double> a(helper(5, destructor_count, copy_cnt));
+        variant<int, helper*, double> b(helper_ptr);
+    }
+    CHECK(destructor_count == 2);
+    delete helper_ptr;
+}
 
-//TEST_CASE("Test empty") {
-//    int destructor_count = 0;
-//    int copy_cnt = 0;
-//    variant<int, helper, double> b;
-//    CHECK(b.empty());
-//    b = helper(5, destructor_count, copy_cnt);
-//    CHECK(!b.empty());
-//}
+TEST_CASE("Test empty") {
+    int destructor_count = 0;
+    int copy_cnt = 0;
+    variant<int, helper, double> b;
+    CHECK(b.empty());
+    b = helper(5, destructor_count, copy_cnt);
+    CHECK(!b.empty());
+}
 
-//TEST_CASE("Test clear") {
-//    int destructor_count = 0;
-//    int copy_cnt = 0;
-//    variant<int, helper, double> b(helper(5, destructor_count, copy_cnt));
-//    CHECK(destructor_count == 1); // Destroying temporary object
-//    CHECK(!b.empty());
-//    b.clear();
-//    CHECK(b.empty());
-//    CHECK(destructor_count == 2); // Destroying object on clear
-//}
+TEST_CASE("Test clear") {
+    int destructor_count = 0;
+    int copy_cnt = 0;
+    variant<int, helper, double> b(helper(5, destructor_count, copy_cnt));
+    CHECK(destructor_count == 1); // Destroying temporary object
+    CHECK(!b.empty());
+    b.clear();
+    CHECK(b.empty());
+    CHECK(destructor_count == 2); // Destroying object on clear
+}
 
-//TEST_CASE("Test which") {
-//    int destructor_count = 0;
-//    int copy_cnt = 0;
-//    variant<int, helper, std::string> b(helper(5, destructor_count, copy_cnt));
-//    CHECK(b.which() == 1);
-//    b = 5;
-//    CHECK(b.which() == 0);
-//    b = "Hello";
-//    CHECK(b.which() == 2);
-//}
+TEST_CASE("Test which") {
+    int destructor_count = 0;
+    int copy_cnt = 0;
+    variant<int, helper, std::string> b(helper(5, destructor_count, copy_cnt));
+    CHECK(b.which() == 1);
+    b = 5;
+    CHECK(b.which() == 0);
+    b = "Hello";
+    CHECK(b.which() == 2);
+}
 
 //TEST_CASE("Apply visitor") {
 //    struct visitor {
@@ -203,28 +203,28 @@ TEST_CASE("Default constructor") {
 //    CHECK(v.result == "empty,int,vec,string,");
 //}
 
-//TEST_CASE("Copy constructor") {
-//    int destructor_count = 0;
-//    int copy_cnt = 0;
-//    {
-//        variant<helper> a(helper(5, destructor_count, copy_cnt));
-//        variant<helper> b(a);
-//        CHECK(get<helper>(a).tag == 5);
-//        CHECK(get<helper>(b).tag == 5);
-//        CHECK(copy_cnt > 0);
-//    }
-//    CHECK(destructor_count == 3);
-//}
+TEST_CASE("Copy constructor") {
+    int destructor_count = 0;
+    int copy_cnt = 0;
+    {
+        variant<helper> a(helper(5, destructor_count, copy_cnt));
+        variant<helper> b(a);
+        CHECK(get<helper>(a).tag == 5);
+        CHECK(get<helper>(b).tag == 5);
+        CHECK(copy_cnt > 0);
+    }
+    CHECK(destructor_count == 3);
+}
 
-//TEST_CASE("Copy operator=") {
-//    variant<int, helper> a(3);
-//    variant<int, helper> b(5);
-//    b = a;
-//    CHECK(get<int>(a) == 3);
-//    CHECK(get<int>(b) == 3);
-//    b = variant<int, helper>(6);
-//    CHECK(get<int>(b) == 6);
-//}
+TEST_CASE("Copy operator=") {
+    variant<int, helper> a(3);
+    variant<int, helper> b(5);
+    b = a;
+    CHECK(get<int>(a) == 3);
+    CHECK(get<int>(b) == 3);
+    b = variant<int, helper>(6);
+    CHECK(get<int>(b) == 6);
+}
 
 //#include <iostream>
 
