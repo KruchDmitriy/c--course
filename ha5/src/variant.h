@@ -31,7 +31,7 @@ namespace au {
 
 
     template <class ...Args>
-    class alignas(get_max_alignof<Args...>())
+    class alignas(details::get_max_alignof<Args...>())
     variant {
     public:
         variant()
@@ -44,7 +44,7 @@ namespace au {
             : cur_type(INVALID_TYPE)
             , cur_type_idx(INVALID_INDEX)
         {
-            const int same_type_idx = get_same_type<T, Args...>();
+            const int same_type_idx = details::get_same_type<T, Args...>();
             if (same_type_idx != -1) {
                 new (content) T(std::move(arg));
                 cur_type = typeid(T);
@@ -52,7 +52,7 @@ namespace au {
                 return;
             }
 
-            const int convert_type_idx = get_first_convertible_type<T, Args...>();
+            const int convert_type_idx = details::get_first_convertible_type<T, Args...>();
             cur_type_idx = convert_type_idx;
             if (convert_type_idx == -1) {
                 throw std::exception();
@@ -64,14 +64,14 @@ namespace au {
         }
 
         ~variant() {
-            destroy<Args...>(cur_type_idx, content);
+            details::destroy<Args...>(cur_type_idx, content);
         }
 
         variant(const variant& other)
             : cur_type(other.cur_type)
             , cur_type_idx(other.cur_type_idx)
         {
-            copy<Args...>(cur_type_idx, other.content, content);
+            details::copy<Args...>(cur_type_idx, other.content, content);
         }
 
         variant(variant&& other)
@@ -95,15 +95,17 @@ namespace au {
         }
 
         void clear() {
-            destroy<Args...>(cur_type_idx, content);
+            details::destroy<Args...>(cur_type_idx, content);
             cur_type = INVALID_TYPE;
             cur_type_idx = INVALID_INDEX;
         }
 
 
+    private:
         const int INVALID_INDEX = -1;
         const std::type_index INVALID_TYPE = std::type_index(typeid(void));
 
+    public:
         bool empty() const {
             return cur_type_idx == INVALID_INDEX;
         }
@@ -117,31 +119,16 @@ namespace au {
         friend T* get(variant<A...>* v);
 
         template <class T, class ...A>
-        friend const T* get(variant<A...>* v);
-
-        template <class T, class ...A>
-        friend T& get(variant<A...>& v);
-
-        template <class T, class ...A>
-        friend const T& get(const variant<A...>& v);
-
-        template <size_t idx, class ...A>
-        friend auto get(      variant<A...>* v) ->       typename std::tuple_element<idx, std::tuple<A...>>::type*;
-
-        template <size_t idx, class ...A>
-        friend auto get(const variant<A...>* v) -> const typename std::tuple_element<idx, std::tuple<A...>>::type*;
-
-        template <size_t idx, class ...A>
-        friend auto get(      variant<A...>& v) ->       typename std::tuple_element<idx, std::tuple<A...>>::type&;
-
-        template <size_t idx, class ...A>
-        friend auto get(const variant<A...>& v) -> const typename std::tuple_element<idx, std::tuple<A...>>::type&;
+        friend const T* get(const variant<A...>* v);
 
         template <class ...A>
         friend void swap(variant<A...>& v1, variant<A...>& v2);
 
+        template <class Visitor, class ...A>
+        friend void apply_visitor(Visitor& visitor, variant<A...>& v);
+
     private:
-        static constexpr size_t max_size = get_max_sizeof<Args...>();
+        static constexpr size_t max_size = details::get_max_sizeof<Args...>();
         using types = std::tuple<Args...>;
         std::type_index cur_type;
         int cur_type_idx;
@@ -154,9 +141,9 @@ namespace au {
 
         char tmp[size];
 
-        move<A...>(v1.cur_type_idx, v1.content, tmp);
-        move<A...>(v2.cur_type_idx, v2.content, v1.content);
-        move<A...>(v1.cur_type_idx, tmp, v2.content);
+        details::move<A...>(v1.cur_type_idx, v1.content, tmp);
+        details::move<A...>(v2.cur_type_idx, v2.content, v1.content);
+        details::move<A...>(v1.cur_type_idx, tmp, v2.content);
 
         std::swap(v1.cur_type, v2.cur_type);
         std::swap(v1.cur_type_idx, v2.cur_type_idx);
@@ -172,9 +159,9 @@ namespace au {
     }
 
     template <class T, class ...Args>
-    const T* get(variant<Args...>* v) {
+    const T* get(const variant<Args...>* v) {
         if (!v->empty() && std::type_index(typeid(T)) == v->cur_type) {
-            return reinterpret_cast<T*>(v->content);
+            return reinterpret_cast<const T*>(v->content);
         }
 
         return nullptr;
@@ -182,20 +169,22 @@ namespace au {
 
     template <class T, class ...Args>
     T& get(variant<Args...>& v) {
-        if (!v.empty() && std::type_index(typeid(T)) == v.cur_type) {
-            return *reinterpret_cast<T*>(v.content);
+        T* ptr = get<T, Args...>(&v);
+        if (ptr == nullptr) {
+            throw bad_get(typeid(T).name());
         }
 
-        throw bad_get(typeid(T).name());
+        return *ptr;
     }
 
     template <class T, class ...Args>
     const T& get(const variant<Args...>& v) {
-        if (!v.empty() && std::type_index(typeid(T)) == v.cur_type) {
-            return *reinterpret_cast<const T*>(v.content);
+        const T* ptr = get<T, Args...>((const variant<Args...>*) &v);
+        if (ptr == nullptr) {
+            throw bad_get(typeid(T).name());
         }
 
-        throw bad_get(typeid(T).name());
+        return *ptr;
     }
 
     template <size_t idx, class ...Args>
@@ -203,12 +192,7 @@ namespace au {
         -> typename std::tuple_element<idx, std::tuple<Args...>>::type*
     {
         using type = typename std::tuple_element<idx, std::tuple<Args...>>::type;
-
-        if (v->cur_type_idx == idx) {
-            return reinterpret_cast<type*>(v->content);
-        }
-
-        return nullptr;
+        return get<type, Args...>(v);
     }
 
     template <size_t idx, class ...Args>
@@ -216,12 +200,7 @@ namespace au {
         -> const typename std::tuple_element<idx, std::tuple<Args...>>::type*
     {
         using type = typename std::tuple_element<idx, std::tuple<Args...>>::type;
-
-        if (v->cur_type_idx == idx) {
-            return reinterpret_cast<const type*>(v->content);
-        }
-
-        return nullptr;
+        return get<type, Args...>(v);
     }
 
     template <size_t idx, class ...Args>
@@ -229,12 +208,7 @@ namespace au {
         -> typename std::tuple_element<idx, std::tuple<Args...>>::type&
     {
         using type = typename std::tuple_element<idx, std::tuple<Args...>>::type;
-
-        if (v.cur_type_idx == idx) {
-            return *reinterpret_cast<type*>(v.content);
-        }
-
-        throw bad_get(typeid(type).name());
+        return get<type, Args...>(v);
     }
 
     template <size_t idx, class ...Args>
@@ -242,11 +216,31 @@ namespace au {
         -> const typename std::tuple_element<idx, std::tuple<Args...>>::type&
     {
         using type = typename std::tuple_element<idx, std::tuple<Args...>>::type;
+        return get<type, Args...>(v);
+    }
 
-        if (v.cur_type_idx == idx) {
-            return *reinterpret_cast<const type*>(v.content);
+
+    template <class Visitor>
+    void apply(Visitor&, char*, int) {}
+
+    template <class Visitor, class First, class ...Args>
+    void apply(Visitor& visitor, char* content, int cur_idx) {
+        if (cur_idx == 0) {
+            First* ptr = reinterpret_cast<First*>(content);
+            visitor(*ptr);
+            return;
         }
 
-        throw bad_get(typeid(type).name());
+        apply<Visitor, Args...>(visitor, content, cur_idx - 1);
+    }
+
+    template <class Visitor, class ...Args>
+    void apply_visitor(Visitor& visitor, variant<Args...>& v) {
+        if (v.empty()) {
+            visitor();
+            return;
+        }
+
+        apply<Visitor, Args...>(visitor, v.content, v.cur_type_idx);
     }
 }

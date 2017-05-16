@@ -172,36 +172,36 @@ TEST_CASE("Test which") {
     CHECK(b.which() == 2);
 }
 
-//TEST_CASE("Apply visitor") {
-//    struct visitor {
-//        std::string result;
+TEST_CASE("Apply visitor") {
+    struct visitor {
+        std::string result;
 
-//        void operator()(int a) {
-//            result += "int,";
-//        }
-//        void operator()(std::vector<int> a) {
-//            result += "vec,";
+        void operator()(int a) {
+            result += "int,";
+        }
+        void operator()(std::vector<int> a) {
+            result += "vec,";
 
-//        }
-//        void operator()(std::string a) {
-//            result += "string,";
-//        }
-//        void operator()() {
-//            result += "empty,";
-//        }
-//    };
+        }
+        void operator()(std::string a) {
+            result += "string,";
+        }
+        void operator()() {
+            result += "empty,";
+        }
+    };
 
-//    variant<int, std::vector<int>, std::string> a;
-//    visitor v;
-//    apply_visitor(v, a);
-//    a = 5;
-//    apply_visitor(v, a);
-//    a = vector<int>();
-//    apply_visitor(v, a);
-//    a = "Hey";
-//    apply_visitor(v, a);
-//    CHECK(v.result == "empty,int,vec,string,");
-//}
+    variant<int, std::vector<int>, std::string> a;
+    visitor v;
+    apply_visitor(v, a);
+    a = 5;
+    apply_visitor(v, a);
+    a = vector<int>();
+    apply_visitor(v, a);
+    a = "Hey";
+    apply_visitor(v, a);
+    CHECK(v.result == "empty,int,vec,string,");
+}
 
 TEST_CASE("Copy constructor") {
     int destructor_count = 0;
