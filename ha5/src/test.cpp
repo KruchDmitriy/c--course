@@ -201,6 +201,10 @@ TEST_CASE("Apply visitor") {
     a = "Hey";
     apply_visitor(v, a);
     CHECK(v.result == "empty,int,vec,string,");
+
+    visitor v2;
+    apply_visitor(v2, variant<std::string>("a"));
+    CHECK(v2.result == "string,");
 }
 
 TEST_CASE("Copy constructor") {

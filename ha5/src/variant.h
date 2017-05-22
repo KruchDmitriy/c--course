@@ -243,4 +243,9 @@ namespace au {
 
         apply<Visitor, Args...>(visitor, v.content, v.cur_type_idx);
     }
+
+    template <class Visitor, class ...Args>
+    void apply_visitor(Visitor& visitor, variant<Args...>&& v) {
+        apply_visitor(visitor, v);
+    }
 }
